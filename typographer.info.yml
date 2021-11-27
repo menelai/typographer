@@ -4,3 +4,6 @@ description: 'Adds title and body typogrifying and html purifier'
 package: 'Input filters'
 core: 8.x
 core_version_requirement: ^8 || ^9
+project: 'typographer'
+'interface translation project': typographer
+'interface translation server pattern': modules/contrib/%project/translations/%project-%language.po

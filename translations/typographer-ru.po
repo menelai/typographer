@@ -1,0 +1,18 @@
+msgid "Node Typography"
+msgstr "Типограф"
+
+msgid "Process text typographing and cleaning"
+msgstr "Типографирование и очистка текстов"
+
+msgid "Do typography"
+msgstr "Типографить"
+
+msgid "Enable text typographer processing on node save"
+msgstr "Включить преобразование при сохранении материала"
+
+msgid "Do Word Cleaning"
+msgstr "Чистить HTML"
+
+msgid "Enable Microsoft Word tags and styles cleaning processing on node save"
+msgstr "Включить очистку тегов от Microsoft Word при сохранении материала"
+

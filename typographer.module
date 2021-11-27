@@ -35,13 +35,13 @@ function typographer_form_alter(&$form, FormStateInterface $form_state, $form_id
       $form['node_typography']['do_typography'] = [
         '#type' => 'checkbox',
         '#title' => t('Do typography'),
-        '#description' => t('Enable text typographer processing on node save. Fields for typographing should bet set in Rules.')
+        '#description' => t('Enable text typographer processing on node save')
       ];
 
       $form['node_typography']['do_cleanword'] = [
         '#type' => 'checkbox',
         '#title' => t('Do Word Cleaning'),
-        '#description' => t('Enable Microsoft Word tags and styles cleaning processing on node save. Fields for cleaning should bet set in Rules.')
+        '#description' => t('Enable Microsoft Word tags and styles cleaning processing on node save')
       ];
 
       array_unshift($form['actions']['submit']['#submit'], 'typographer_add_node_data');
