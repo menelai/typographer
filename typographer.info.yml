@@ -1,0 +1,6 @@
+name: Typographer
+type: module
+description: 'Adds title and body typogrifying and html purifier'
+package: 'Input filters'
+core: 8.x
+core_version_requirement: ^8 || ^9

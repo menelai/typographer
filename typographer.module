@@ -1,0 +1,87 @@
+<?php
+
+use Drupal\Core\Entity\EntityForm;
+use \Drupal\Core\Form\FormStateInterface;
+use \Drupal\node\Entity\Node;
+
+/**
+ * @file
+ * Define hook implementations for the typographer module.
+ */
+
+/**
+ * @param $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ * @param $form_id
+ */
+function typographer_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $formObject =  $form_state->getFormObject();
+
+  if ($formObject instanceof EntityForm) {
+    $entity = $form_state->getFormObject()->getEntity();
+    if ($entity instanceof Node) {
+      $form['node_typography'] = [
+        '#type' => 'fieldset',
+        '#title' => t('Node Typography'),
+        '#description' => t('Process text typographing and cleaning'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+        '#weight' => 80,
+        '#group' => 'additional_settings',
+        '#tree' => TRUE,
+        '#attributes' => ['class' => ['node-typography']]
+      ];
+
+      $form['node_typography']['do_typography'] = [
+        '#type' => 'checkbox',
+        '#title' => t('Do typography'),
+        '#description' => t('Enable text typographer processing on node save. Fields for typographing should bet set in Rules.')
+      ];
+
+      $form['node_typography']['do_cleanword'] = [
+        '#type' => 'checkbox',
+        '#title' => t('Do Word Cleaning'),
+        '#description' => t('Enable Microsoft Word tags and styles cleaning processing on node save. Fields for cleaning should bet set in Rules.')
+      ];
+
+      array_unshift($form['actions']['submit']['#submit'], 'typographer_add_node_data');
+    }
+  }
+}
+
+function typographer_add_node_data($form, \Drupal\Core\Form\FormState &$form_state) {
+  $values = $form_state->getValues();
+  if (isset($values['node_typography']['do_cleanword']) && $values['node_typography']['do_cleanword']) {
+    foreach (['title', 'body'] as $field) {
+      $values[$field][0]['value'] = typographer_cleanHtml($values[$field][0]['value']);
+      $form_state->setValue($field, $values[$field]);
+    }
+  }
+  if (isset($values['node_typography']['do_typography']) && $values['node_typography']['do_typography']) {
+    foreach (['title', 'body'] as $field) {
+      $values[$field][0]['value'] = typographer_doTypography($values[$field][0]['value']);
+      $form_state->setValue($field, $values[$field]);
+    }
+  }
+}
+
+function typographer_doTypography(string $input): string {
+  require_once(__DIR__.'/EMT.php');
+
+  return EMTypograph::fast_apply($input, [
+    'Text.paragraphs' => 'off',
+    'OptAlign.all' => 'off',
+    'Etc.unicode_convert' => 'on',
+  ]);
+}
+
+function typographer_cleanHtml(string $text): string {
+  require_once(__DIR__.'/HTMLCleaner.php');
+  $cleaner = new HTMLCleaner();
+  $cleaner->Options['UseTidy'] = FALSE;
+  $cleaner->Options['OutputXHTML'] = FALSE;
+  $cleaner->Options['Optimize'] = TRUE;
+
+  $cleaner->html = $text;
+  return @$cleaner->cleanUp('utf-8');
+}
