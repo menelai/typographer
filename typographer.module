@@ -1,32 +1,91 @@
 <?php
 
-use Drupal\Core\Entity\EntityForm;
-use \Drupal\Core\Form\FormStateInterface;
-use \Drupal\node\Entity\Node;
-
 /**
  * @file
  * Define hook implementations for the typographer module.
  */
 
+use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\EntityDeleteForm;
+use Drupal\Core\Entity\EntityForm;
+use \Drupal\Core\Form\FormStateInterface;
+use Drupal\field\FieldConfigInterface;
+use \Drupal\field_ui\Form\FieldConfigEditForm;
+
 /**
+ * Text fields
+ * @return string[]
+ */
+function typographer_field_types(): array {
+  return ['text_with_summary', 'string', 'string_long', 'text', 'text_long'];
+};
+
+/**
+ * Implements hook_form_alter() for 'typographer'
  * @param $form
- * @param \Drupal\Core\Form\FormStateInterface $form_state
+ * @param FormStateInterface $form_state
  * @param $form_id
  */
 function typographer_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   $formObject =  $form_state->getFormObject();
 
-  if ($formObject instanceof EntityForm) {
+  // Add checkboxes to field config
+  if ($formObject instanceof FieldConfigEditForm) {
     $entity = $form_state->getFormObject()->getEntity();
-    if ($entity instanceof Node) {
+
+    $type = $entity->getType();
+
+    if (!in_array($type, typographer_field_types())) {
+      return;
+    }
+
+    $form['typography'] = [
+      '#type' => 'fieldset',
+      '#title' => t('Typography'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#weight' => 99,
+      '#group' => 'additional_settings',
+      '#tree' => TRUE,
+      '#attributes' => [
+        'class' => [
+          'typography',
+        ],
+      ],
+    ];
+
+    if ($type === 'text_with_summary') {
+      $form['typography']['do_typography_summary'] = [
+        '#type' => 'checkbox',
+        '#title' => t('Enable typography on summary'),
+        '#default_value' => $entity->getSetting('do_typography_summary'),
+      ];
+    }
+
+    $form['typography']['do_typography'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Enable typography'),
+      '#default_value' => $entity->getSetting('do_typography'),
+    ];
+
+    $form['typography']['do_cleanword'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Enable Word Cleaning'),
+      '#default_value' => $entity->getSetting('do_cleanword'),
+    ];
+  }
+
+  // Add checkboxes to edit form
+  if ($formObject instanceof EntityForm && !($formObject instanceof EntityDeleteForm)) {
+    $entity = $form_state->getFormObject()->getEntity();
+    if ($entity instanceof ContentEntityBase) {
       $form['node_typography'] = [
         '#type' => 'fieldset',
         '#title' => t('Node Typography'),
         '#description' => t('Process text typographing and cleaning'),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
-        '#weight' => 80,
+        '#weight' => 9999,
         '#group' => 'additional_settings',
         '#tree' => TRUE,
         '#attributes' => ['class' => ['node-typography']]
@@ -44,27 +103,108 @@ function typographer_form_alter(&$form, FormStateInterface $form_state, $form_id
         '#description' => t('Enable Microsoft Word tags and styles cleaning processing on node save')
       ];
 
-      array_unshift($form['actions']['submit']['#submit'], 'typographer_add_node_data');
+      if (!isset($form['#entity_builders'])) {
+        $form['#entity_builders'] = [];
+      }
+      $form['#entity_builders'][] = 'typographer_entity_builder';
     }
   }
 }
 
-function typographer_add_node_data($form, \Drupal\Core\Form\FormState &$form_state) {
+/**
+ * Transforms entity values based on settings and submit
+ * @param string $type
+ * @param \Drupal\Core\Entity\ContentEntityBase $entity
+ * @param $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *
+ * @return \Drupal\Core\Entity\ContentEntityBase
+ * @throws \Drupal\Core\TypedData\Exception\ReadOnlyException
+ */
+function typographer_entity_builder(string $type, ContentEntityBase $entity, &$form, FormStateInterface &$form_state): ContentEntityBase {
   $values = $form_state->getValues();
-  if (isset($values['node_typography']['do_cleanword']) && $values['node_typography']['do_cleanword']) {
-    foreach (['title', 'body'] as $field) {
-      $values[$field][0]['value'] = typographer_cleanHtml($values[$field][0]['value']);
-      $form_state->setValue($field, $values[$field]);
-    }
+
+  if (
+    !(isset($values['node_typography']['do_cleanword']) && $values['node_typography']['do_cleanword']
+      || isset($values['node_typography']['do_typography']) && $values['node_typography']['do_typography'])
+  ) {
+    return $entity;
   }
-  if (isset($values['node_typography']['do_typography']) && $values['node_typography']['do_typography']) {
-    foreach (['title', 'body'] as $field) {
-      $values[$field][0]['value'] = typographer_doTypography($values[$field][0]['value']);
-      $form_state->setValue($field, $values[$field]);
+
+  $titleFields = ['title', 'name'];
+  $fields = $entity->getFields();
+  $defs = $entity->getFieldDefinitions();
+
+  foreach ($defs as $fieldDefinition) {
+    $type = $fieldDefinition->getType();
+    $name = $fieldDefinition->getName();
+    $settings = $fieldDefinition->getSettings();
+    if (!in_array($type, typographer_field_types()) && !in_array($name, $titleFields)) {
+      continue;
     }
+
+    $val = $fields[$name]->getValue();
+
+    if (
+      isset($values['node_typography']['do_cleanword']) && $values['node_typography']['do_cleanword']
+      && isset($settings['do_cleanword']) && $settings['do_cleanword']
+    ) {
+      foreach ($val as $i => $value) {
+        $val[$i]['value'] = typographer_cleanHtml($value['value']);
+      }
+    }
+
+    if (
+      isset($values['node_typography']['do_typography']) && $values['node_typography']['do_typography']
+      && (isset($settings['do_typography']) && $settings['do_typography'] || in_array($name, $titleFields))
+    ) {
+      foreach ($val as $i => $value) {
+        $val[$i]['value'] = typographer_doTypography($value['value']);
+
+        if (isset($settings['do_typography_summary'], $val[$i]['summary'])) {
+          $val[$i]['summary'] = typographer_doTypography($val[$i]['summary']);
+        }
+      }
+    }
+
+    $fields[$name]->setValue($val);
+  }
+
+  return $entity;
+
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() on 'field_config'
+ * @param \Drupal\field\FieldConfigInterface $field
+ *
+ * @return void
+ */
+function typographer_field_config_presave(FieldConfigInterface $field) {
+  if ($field->isSyncing()) {
+    return;
+  }
+
+  if (isset($field->typography['do_typography_summary'])) {
+    $field->setSetting('do_typography_summary', $field->typography['do_typography_summary']);
+  }
+
+  if (isset($field->typography['do_typography'])) {
+    $field->setSetting('do_typography', $field->typography['do_typography']);
+  }
+
+  if (isset($field->typography['do_cleanword'])) {
+    $field->setSetting('do_cleanword', $field->typography['do_cleanword']);
   }
 }
 
+/**
+ *
+ *
+ * @param string $input
+ *
+ * @return string
+ */
 function typographer_doTypography(string $input): string {
   require_once(__DIR__.'/EMT.php');
 

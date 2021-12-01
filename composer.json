@@ -3,16 +3,17 @@
     "type": "drupal-module",
     "description": "Adds title and body typogrifying and html purifier",
     "keywords": ["drupal","typography"],
-    "homepage": "https://github.com/menelai/typographer",
+    "homepage": "https://github.com/Seldaek/monolog",
     "license": "MIT",
     "authors": [
         {
             "name": "Nikolai Kovalenko",
             "email": "kovalenko@gmail.com",
+            "homepage": "http://seld.be",
             "role": "Developer"
         }
     ],
     "require": {
-        "php": ">=7.4.0"
+        "php": ">=8.0.0"
     }
 }

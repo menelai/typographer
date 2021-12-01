@@ -1,9 +1,14 @@
-# Drupal 8-9 node typographer and html purifier
+# Typographer
 
-## Typographer
+## Configuration
 
-Uses modified library from http://mdash.ru/ to make texts pretty
+Once installed, this module adds two checkboxes to configuration form of all string type fields: 
+`'text_with_summary', 'string', 'string_long', 'text', 'text_long'`.
 
-## HTML purifier
+**Enable typography** — for changing quotes, dashes etc
 
-Uses HTMLCleaner 1.0 RC5 to wipe out Microsoft Word styles and tags
+**Enable Word Cleaning** — for cleaning HTML from MS Word artifacts
+
+## Usage
+
+In entity edit form check **Do Typography** or **Do Word Cleaning** checkbox and submit the form.
