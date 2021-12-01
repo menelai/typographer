@@ -1,9 +1,9 @@
 {
-    "name": "kovalenko/typorgrapher",
+    "name": "kovalenko/typographer",
     "type": "drupal-module",
     "description": "Adds title and body typogrifying and html purifier",
     "keywords": ["drupal","typography"],
-    "homepage": "https://github.com/Seldaek/monolog",
+    "homepage": "https://github.com/menelai/typographer",
     "license": "MIT",
     "authors": [
         {
