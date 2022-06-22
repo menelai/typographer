@@ -27,6 +27,10 @@ function typographer_field_types(): array {
  * @param $form_id
  */
 function typographer_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  if (!\Drupal::currentUser()->hasPermission('access typographer')) {
+    return;
+  }
+
   $formObject =  $form_state->getFormObject();
 
   // Add checkboxes to field config

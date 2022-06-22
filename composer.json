@@ -1,7 +1,7 @@
 {
     "name": "kovalenko/typographer",
     "type": "drupal-module",
-    "description": "Adds title and body typogrifying and html purifier",
+    "description": "Adds typogrifying and html purifier for fields of string type",
     "keywords": ["drupal","typography"],
     "homepage": "https://github.com/menelai/typographer",
     "license": "MIT",
